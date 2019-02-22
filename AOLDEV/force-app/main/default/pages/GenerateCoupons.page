@@ -1,0 +1,52 @@
+<apex:page controller="GenerateCouponsCtr" showHeader="true" sidebar="true">
+    <apex:sectionHeader title="Generate Bulk Coupons" subtitle="Coupons !"/>
+    <apex:form >
+        <apex:pageMessages />
+        <apex:pageBlock title="Coupons">
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Generate" action="{!generateAction}"/>
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection title="General Information">
+                <apex:inputField value="{!Coupon.Coupon_Type__c}"/>
+                <apex:inputField value="{!Coupon.Subscription__c}"/>
+                <apex:inputField value="{!Coupon.Discount_Type__c}"/>
+                <apex:inputField value="{!Coupon.Subscription_Master__c}"/>
+                <apex:inputField value="{!Coupon.Discount_Percentage_OR_Flat_Price_OR_Day__c}"/>
+                <apex:inputField value="{!Coupon.Workshop__c}"/>
+                <apex:inputField value="{!Coupon.Valid_From_Date__c}"/>
+                <apex:inputField value="{!Coupon.CType_Product_Workshop__c}"/>
+                <apex:inputField value="{!Coupon.Valid_Till_Date__c}"/>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="Automate Scripts">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="No Of Coupon" for="NoOfCoupon"/>
+                    <apex:inputText value="{!NoOfCoupon}" id="NoOfCoupon"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Coupon Code Length" for="CouponCodeLength"/>
+                    <apex:selectList id="CouponCodeLength" value="{!CouponCodeLength}" size="1">
+                        <apex:selectOption itemValue="8" itemLabel="8"/>
+                        <apex:selectOption itemValue="12" itemLabel="12"/>
+                        <apex:selectOption itemValue="16" itemLabel="16"/>
+                        <apex:selectOption itemValue="20" itemLabel="20"/>
+                        <apex:selectOption itemValue="24" itemLabel="24"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        <apex:pageBlock title="Generated Coupons" rendered="{!GeneratedCoupons.size > 0}">
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Insert & Download csv" action="{!downloadCSVAction}"/>
+            </apex:pageBlockButtons>
+            <apex:pageBlockTable value="{!GeneratedCoupons}" var="item">
+                <apex:column value="{!item.Coupon_Name_OR_ID__c}"/>
+                <apex:column value="{!item.Subscription__c}"/>
+                <apex:column value="{!item.Subscription_Master__c}"/>
+                <apex:column value="{!item.Discount_Type__c}"/>
+                <apex:column value="{!item.Valid_From_Date__c}"/>
+                <apex:column value="{!item.Valid_Till_Date__c}"/>
+                <apex:column value="{!item.Discount_Percentage_OR_Flat_Price_OR_Day__c}"/>
+            </apex:pageBlockTable>
+       </apex:pageBlock>
+    </apex:form>
+</apex:page>

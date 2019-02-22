@@ -1,0 +1,665 @@
+<apex:page standardController="Event__c" extensions="QRCodeScannerExtension" docType="html-5.0" applyBodyTag="false" applyHtmlTag="false" showHeader="false" sidebar="false" standardStylesheets="false" showChat="false">
+<html lang="en">
+  <head>
+    <title>QR Code Scanner</title>
+    <apex:stylesheet value="{!URLFOR($Resource.qrcode, 'toasty.min.css')}"/>
+    <script src="https://cdn.jsdelivr.net/npm/mobile-detect@1.4.3/mobile-detect.min.js"></script>
+  </head>
+  <body>
+    <style>
+    body {
+        background-color:#fff;
+    }
+    
+    @-webkit-keyframes fadein {
+        from {bottom: 0; opacity: 0;} 
+        to {bottom: 30px; opacity: 1;}
+    }
+    
+    @keyframes fadein {
+        from {bottom: 0; opacity: 0;}
+        to {bottom: 30px; opacity: 1;}
+    }
+    
+    @-webkit-keyframes expand {
+        from {min-width: 50px} 
+        to {min-width: 350px}
+    }
+    
+    @keyframes expand {
+        from {min-width: 50px}
+        to {min-width: 350px}
+    }
+    @-webkit-keyframes stay {
+        from {min-width: 350px} 
+        to {min-width: 350px}
+    }
+    
+    @keyframes stay {
+        from {min-width: 350px}
+        to {min-width: 350px}
+    }
+    @-webkit-keyframes shrink {
+        from {min-width: 350px;} 
+        to {min-width: 50px;}
+    }
+    
+    @keyframes shrink {
+        from {min-width: 350px;} 
+        to {min-width: 50px;}
+    }
+    
+    @-webkit-keyframes fadeout {
+        from {bottom: 30px; opacity: 1;} 
+        to {bottom: 60px; opacity: 0;}
+    }
+    
+    @keyframes fadeout {
+        from {bottom: 30px; opacity: 1;}
+        to {bottom: 60px; opacity: 0;}
+    }
+    blockquote, body, dd, dl, dt, fieldset, figure, h1, h2, h3, h4, h5, h6, hr, html, iframe, legend, li, ol, p, pre, textarea, ul {
+        margin: 0;
+        padding: 0;
+    }
+    canvas {
+        display: none;
+        margin: auto;
+    }
+    hr {
+        margin-top: 32px;
+    }
+    input[type="file"] {
+        display: block;
+        margin-bottom: 16px;
+    }
+    div {
+        margin-bottom: 16px;
+    }
+    video {
+        max-width:500px;
+        width: 100%;
+        margin: auto;
+        display: block;
+    }
+    @-webkit-keyframes scanner {
+      0% {
+        bottom: 100%;
+      }
+      50% {
+        bottom: 0%;
+      }
+      100% {
+        bottom: 100%;
+      }
+    }
+    
+    @-moz-keyframes scanner {
+      0% {
+        bottom: 100%;
+      }
+      50% {
+        bottom: 0%;
+      }
+      100% {
+        bottom: 100%;
+      }
+    }
+    
+    @-o-keyframes scanner {
+      0% {
+        bottom: 100%;
+      }
+      50% {
+        bottom: 0%;
+      }
+      100% {
+        bottom: 100%;
+      }
+    }
+    
+    @keyframes scanner {
+      0% {
+        bottom: 100%;
+      }
+      50% {
+        bottom: 0%;
+      }
+      100% {
+        bottom: 100%;
+      }
+    }
+    .app__overlay {
+        border: 2px solid white;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        transition: all .2s ease-in;
+        width: 275px;
+        max-height: 275px;
+        margin: 0 auto;
+    }
+    
+    .custom-scanner {
+      width: 100%;
+      height: 2px;
+      background: #4CAF50;
+      position: absolute;
+      -webkit-transition: all 200ms linear;
+      -moz-transition: all 200ms linear;
+      transition: all 200ms linear;
+      -webkit-animation: scanner 3s infinite linear;
+      -moz-animation: scanner 3s infinite linear;
+      -o-animation: scanner 3s infinite linear;
+      animation: scanner 3s infinite linear;
+      box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.4);
+      display: none;
+    }
+    .error {
+        background-color:#ff0000;
+    }
+    body, input {font-size:14pt}
+input, label {vertical-align:middle}
+.qrcode-text {padding-right:1.7em; margin-right:0}
+
+    
+.qrcode-text-btn {
+ color: white;
+    background: #4C8FFB;
+    border: 1px #3079ED solid;
+    box-shadow: inset 0 1px 0 #80B0FB;
+    padding: 5px 10px;
+    border-radius: 2px;
+    font-weight: bold;
+    font-size: 9pt;
+    outline: none;
+    padding: 20px;
+    display: table;
+    margin: 20px auto;
+    clear: both;
+}
+
+.qrcode-text-btn:hover {
+  border: 1px #2F5BB7 solid;
+    box-shadow: 0 1px 1px #EAEAEA, inset 0 1px 0 #5A94F1;
+    background: #3F83F1;
+}
+.qrcode-text-btn:active {
+  box-shadow: inset 0 2px 5px #2370FE;
+}
+    
+.qrcode-text-btn > input[type=file] {position:absolute; overflow:hidden; width:1px; height:1px; opacity:0}
+</style>
+<script>
+    window.mobileAndTabletcheck = function() {
+      var check = false;
+      (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4))) check = true;})(navigator.userAgent||navigator.vendor||window.opera);
+      return check;
+    };
+</script>
+<apex:form >
+    
+    <apex:actionFunction action="{!markAttendance}" name="markAttendanceJs" rerender="showstate">
+        <apex:param name="firstParam" assignTo="{!attendeeId}" value="" />
+    </apex:actionFunction>
+
+<div style="position: relative;" id="desktopQRScanner">
+    <video muted="true" autoplay="true" playsinline="true" id="qr-video"></video>
+    <div class="app__overlay">
+        <div class="app__overlay-frame"></div>
+        <div class="custom-scanner" style="display: block;"></div>
+        <div class="app__help-text"></div>
+    </div>
+    <canvas id="debug-canvas"></canvas>
+</div>
+
+<b>Detected QR code: </b>
+<span id="cam-qr-result">{!attendeeId}</span>
+<hr/>
+<label class="qrcode-text-btn" id="mobileQRScanner">
+    Scan QR
+    <input type="file" accept="image/*" capture="environment" onclick="return showQRIntro();" onchange="openQRCamera(this);" tabindex="-1"/>
+</label>
+<script>
+    var options = {
+    // STRING: main class name used to styling each toast message with CSS:
+    // .... IMPORTANT NOTE:
+    // .... if you change this, the configuration consider that you´re
+    // .... re-stylized the plug-in and default toast styles, including CSS3 transitions are lost.
+    classname: "toast",
+    // STRING: name of the CSS transition that will be used to show and hide all toast by default:
+    transition: "slideLeftFade",
+    // BOOLEAN: specifies the way in which the toasts will be inserted in the HTML code:
+    // .... Set to BOOLEAN TRUE and the toast messages will be inserted before those already generated toasts.
+    // .... Set to BOOLEAN FALSE otherwise.
+    insertBefore: true,
+    // INTEGER: duration that the toast will be displayed in milliseconds:
+    // .... Default value is set to 4000 (4 seconds).
+    // .... If it set to 0, the duration for each toast is calculated by text-message length.
+    duration: 4000,
+    // BOOLEAN: enable or disable toast sounds:
+    // .... Set to BOOLEAN TRUE  - to enable toast sounds.
+    // .... Set to BOOLEAN FALSE - otherwise.
+    // NOTE: this is not supported by mobile devices.
+    enableSounds: true,
+    // BOOLEAN: enable or disable auto hiding on toast messages:
+    // .... Set to BOOLEAN TRUE  - to enable auto hiding.
+    // .... Set to BOOLEAN FALSE - disable auto hiding. Instead the user must click on toast message to close it.
+    autoClose: true,
+    // BOOLEAN: enable or disable the progressbar:
+    // .... Set to BOOLEAN TRUE  - enable the progressbar only if the autoClose option value is set to BOOLEAN TRUE.
+    // .... Set to BOOLEAN FALSE - disable the progressbar.
+    progressBar: true,
+    // IMPORTANT: mobile browsers does not support this feature!
+    // Yep, support custom sounds for each toast message when are shown if the
+    // enableSounds option value is set to BOOLEAN TRUE:
+    // NOTE: the paths must point from the project's root folder.
+    sounds: {
+        // path to sound for informational message:
+        info: "{!URLFOR($Resource.qrcode, 'sounds/info/1.mp3')}",
+        // path to sound for successfull message:
+        success: "{!URLFOR($Resource.qrcode, 'sounds/success/1.mp3')}",
+        // path to sound for warn message:
+        warning: "{!URLFOR($Resource.qrcode, 'sounds/warning/1.mp3')}",
+        // path to sound for error message:
+        error: "{!URLFOR($Resource.qrcode, 'sounds/error/1.mp3')}",
+    },
+
+    // callback:
+    // onShow function will be fired when a toast message appears.
+    onShow: function (type) {},
+
+    // callback:
+    // onHide function will be fired when a toast message disappears.
+    onHide: function (type) {},
+
+    // the placement where prepend the toast container:
+    prependTo: document.body.childNodes[0]
+};
+var toast = null;
+document.addEventListener('DOMContentLoaded', function(){ 
+     toast = new Toasty(options);
+}, false);
+
+</script>
+<apex:outputPanel id="showstate">
+   
+<script>
+function launch_toast() {
+    var x = document.getElementById("toast")
+    x.className = "show";
+    setTimeout(function(){ x.className = x.className.replace("show", ""); }, 5000);
+}
+if('{!attendeeId}' !== '') {
+    if('{!messageObj.type}' === '1') {
+        toast.success("{!messageObj.message}");
+    } else {
+        toast.error("{!messageObj.message}");
+    }
+}
+</script>
+
+</apex:outputPanel>
+
+<!--
+<div>
+    <input type="checkbox" id="debug-checkbox"/>
+    <span>Show debug image</span>
+</div>
+
+<h1>Scan from File:</h1>
+<input type="file" id="file-selector"/>
+<b>Detected QR code: </b>
+<span id="file-qr-result">None</span>
+-->
+<script>
+const camQrResult = document.getElementById('cam-qr-result');
+function openQRCamera(node) {
+  var reader = new FileReader();
+  reader.onload = function() {
+    node.value = "";
+    qrcode.callback = function(res) {
+      if(res instanceof Error) {
+        alert("No QR code found. Please make sure the QR code is within the camera's frame and try again.");
+      } else {
+        debounceMarkAttendanceJs(res);
+        setResult(camQrResult, res);
+      }
+    };
+    qrcode.decode(reader.result);
+  };
+  reader.readAsDataURL(node.files[0]);
+}
+
+function showQRIntro() {
+  return true;
+}
+        function debounce(func, wait, immediate) {
+        	var timeout;
+        	return function() {
+        		var context = this, args = arguments;
+        		var later = function() {
+        			timeout = null;
+        			if (!immediate) func.apply(context, args);
+        		};
+        		var callNow = immediate && !timeout;
+        		clearTimeout(timeout);
+        		timeout = setTimeout(later, wait);
+        		if (callNow) func.apply(context, args);
+        	};
+        };
+        
+        var debounceMarkAttendanceJs = debounce(markAttendanceJs, 250);
+
+        var currentProcessing = null;
+        function startBDProcess(id) {
+            if(currentProcessing !== id) {
+                currentProcessing = id;
+                debounceMarkAttendanceJs(id);
+            }
+        }
+        class QrScanner {
+            constructor(video, onDecode, canvasSize = QrScanner.DEFAULT_CANVAS_SIZE) {
+                this.$video = video;
+                this.$canvas = document.createElement('canvas');
+                this._onDecode = onDecode;
+                this._active = false;
+        
+                this.$canvas.width = canvasSize;
+                this.$canvas.height = canvasSize;
+                this._sourceRect = {
+                    x: 0,
+                    y: 0,
+                    width: canvasSize,
+                    height: canvasSize
+                };
+        
+                this.$video.addEventListener('canplay', () => this._updateSourceRect());
+                this.$video.addEventListener('play', () => {
+                    this._updateSourceRect();
+                    this._scanFrame();
+                }, false);
+                this._qrWorker = new Worker(QrScanner.WORKER_PATH);
+            }
+        
+            _updateSourceRect() {
+                const smallestDimension = Math.min(this.$video.videoWidth, this.$video.videoHeight);
+                const sourceRectSize = Math.round(2 / 3 * smallestDimension);
+                this._sourceRect.width = this._sourceRect.height = sourceRectSize;
+                this._sourceRect.x = (this.$video.videoWidth - sourceRectSize) / 2;
+                this._sourceRect.y = (this.$video.videoHeight - sourceRectSize) / 2;
+            }
+        
+            _scanFrame() {
+                if (this.$video.paused || this.$video.ended) return false;
+                requestAnimationFrame(() => {
+                    QrScanner.scanImage(this.$video, this._sourceRect, this._qrWorker, this.$canvas, true)
+                        .then(this._onDecode, error => {
+                            if (error !== 'QR code not found.') {
+                                console.error(error);
+                            }
+                        })
+                        .then(() => this._scanFrame());
+                });
+            }
+        
+            _getCameraStream(facingMode, exact = false) {
+                const constraintsToTry = [{
+                    width: { min: 1024 }
+                }, {
+                    width: { min: 768 }
+                }, {}];
+        
+                if (facingMode) {
+                    if (exact) {
+                        facingMode = { exact: facingMode };
+                    }
+                    constraintsToTry.forEach(constraint => constraint.facingMode = facingMode);
+                }
+                return this._getMatchingCameraStream(constraintsToTry);
+            }
+        
+            _getMatchingCameraStream(constraintsToTry) {
+                if (constraintsToTry.length === 0) {
+                    return Promise.reject('Camera not found.');
+                }
+                return navigator.mediaDevices.getUserMedia({
+                    video: constraintsToTry.shift()
+                }).catch(() => this._getMatchingCameraStream(constraintsToTry));
+            }
+        
+            start() {
+                if (this._active) {
+                    return Promise.resolve();
+                }
+                this._active = true;
+                clearTimeout(this._offTimeout);
+                let facingMode = 'environment';
+                return this._getCameraStream('environment', true)
+                    .catch(() => {
+                        // we (probably) don't have an environment camera
+                        facingMode = 'user';
+                        return this._getCameraStream(); // throws if we can't access the camera
+                    })
+                    .then(stream => {
+                        this.$video.srcObject = stream;
+                        this._setVideoMirror(facingMode);
+                    })
+                    .catch(e => {
+                        this._active = false;
+                        throw e;
+                    });
+            }
+        
+            stop() {
+                if (!this._active) {
+                    return;
+                }
+                this._active = false;
+                this.$video.pause();
+                this._offTimeout = setTimeout(() => {
+                    this.$video.srcObject.getTracks()[0].stop();
+                    this.$video.srcObject = null;
+                }, 3000);
+            }
+        
+            _setVideoMirror(facingMode) {
+                // in user facing mode mirror the video to make it easier for the user to position the QR code
+                const scaleFactor = facingMode==='user'? -1 : 1;
+                this.$video.style.transform = 'scaleX(' + scaleFactor + ')';
+            }
+        
+            setGrayscaleWeights(red, green, blue) {
+                this._qrWorker.postMessage({
+                    type: 'grayscaleWeights',
+                    data: { red, green, blue }
+                });
+            }
+        
+            /* async */
+            static scanImage(imageOrFileOrUrl, sourceRect=null, worker=null, canvas=null, fixedCanvasSize=false,
+                             alsoTryWithoutSourceRect=false) {
+                const promise = new Promise((resolve, reject) => {
+                    worker = worker || new Worker(QrScanner.WORKER_PATH);
+                    let timeout, onMessage, onError;
+                    onMessage = event => {
+                        if (event.data.type !== 'qrResult') {
+                            return;
+                        }
+                        worker.removeEventListener('message', onMessage);
+                        worker.removeEventListener('error', onError);
+                        clearTimeout(timeout);
+                        if (event.data.data !== null) {
+                            resolve(event.data.data);
+                        } else {
+                            reject('QR code not found.');
+                        }
+                    };
+                    onError = () => {
+                        worker.removeEventListener('message', onMessage);
+                        worker.removeEventListener('error', onError);
+                        clearTimeout(timeout);
+                        reject('Worker error.');
+                    };
+                    worker.addEventListener('message', onMessage);
+                    worker.addEventListener('error', onError);
+                    timeout = setTimeout(onError, 3000);
+                    QrScanner._loadImage(imageOrFileOrUrl).then(image => {
+                        const imageData = QrScanner._getImageData(image, sourceRect, canvas, fixedCanvasSize);
+                        worker.postMessage({
+                            type: 'decode',
+                            data: imageData
+                        }, [imageData.data.buffer]);
+                    }).catch(reject);
+                });
+        
+                if (sourceRect && alsoTryWithoutSourceRect) {
+                    return promise.catch(() => QrScanner.scanImage(imageOrFileOrUrl, null, worker, canvas, fixedCanvasSize));
+                } else {
+                    return promise;
+                }
+            }
+        
+            /* async */
+            static _getImageData(image, sourceRect=null, canvas=null, fixedCanvasSize=false) {
+                canvas = canvas || document.createElement('canvas');
+                const sourceRectX = sourceRect && sourceRect.x? sourceRect.x : 0;
+                const sourceRectY = sourceRect && sourceRect.y? sourceRect.y : 0;
+                const sourceRectWidth = sourceRect && sourceRect.width? sourceRect.width : image.width || image.videoWidth;
+                const sourceRectHeight = sourceRect && sourceRect.height? sourceRect.height : image.height || image.videoHeight;
+                if (!fixedCanvasSize && (canvas.width !== sourceRectWidth || canvas.height !== sourceRectHeight)) {
+                    canvas.width = sourceRectWidth;
+                    canvas.height = sourceRectHeight;
+                }
+                const context = canvas.getContext('2d', { alpha: false });
+                context.imageSmoothingEnabled = false; // gives less blurry images
+                context.drawImage(image, sourceRectX, sourceRectY, sourceRectWidth, sourceRectHeight, 0, 0, canvas.width, canvas.height);
+                return context.getImageData(0, 0, canvas.width, canvas.height);
+            }
+        
+            /* async */
+            static _loadImage(imageOrFileOrUrl) {
+                if (imageOrFileOrUrl instanceof HTMLCanvasElement || imageOrFileOrUrl instanceof HTMLVideoElement
+                    || window.ImageBitmap && imageOrFileOrUrl instanceof window.ImageBitmap
+                    || window.OffscreenCanvas && imageOrFileOrUrl instanceof window.OffscreenCanvas) {
+                    return Promise.resolve(imageOrFileOrUrl);
+                } else if (imageOrFileOrUrl instanceof Image) {
+                    return QrScanner._awaitImageLoad(imageOrFileOrUrl).then(() => imageOrFileOrUrl);
+                } else if (imageOrFileOrUrl instanceof File || imageOrFileOrUrl instanceof URL
+                    ||  typeof(imageOrFileOrUrl)==='string') {
+                    const image = new Image();
+                    if (imageOrFileOrUrl instanceof File) {
+                        image.src = URL.createObjectURL(imageOrFileOrUrl);
+                    } else {
+                        image.src = imageOrFileOrUrl;
+                    }
+                    return QrScanner._awaitImageLoad(image).then(() => {
+                        if (imageOrFileOrUrl instanceof File) {
+                            URL.revokeObjectURL(image.src);
+                        }
+                        return image;
+                    });
+                } else {
+                    return Promise.reject('Unsupported image type.');
+                }
+            }
+        
+            /* async */
+            static _awaitImageLoad(image) {
+                return new Promise((resolve, reject) => {
+                    if (image.complete && image.naturalWidth!==0) {
+                        // already loaded
+                        resolve();
+                    } else {
+                        let onLoad, onError;
+                        onLoad = () => {
+                            image.removeEventListener('load', onLoad);
+                            image.removeEventListener('error', onError);
+                            resolve();
+                        };
+                        onError = () => {
+                            image.removeEventListener('load', onLoad);
+                            image.removeEventListener('error', onError);
+                            reject('Image load error');
+                        };
+                        image.addEventListener('load', onLoad);
+                        image.addEventListener('error', onError);
+                    }
+                });
+            }
+        }
+        QrScanner.DEFAULT_CANVAS_SIZE = 500;
+        QrScanner.WORKER_PATH = '/apex/QRCodeServiceWorker';
+    const video = document.getElementById('qr-video');
+    const debugCheckbox = document.getElementById('debug-checkbox');
+    const debugCanvas = document.getElementById('debug-canvas');
+    const debugCanvasContext = debugCanvas.getContext('2d');
+    
+    const fileSelector = document.getElementById('file-selector');
+    const fileQrResult = document.getElementById('file-qr-result');
+    function setResult(label, result) {
+        startBDProcess(result);
+        label.textContent = result;
+        label.style.color = 'teal';
+        clearTimeout(label.highlightTimeout);
+        label.highlightTimeout = setTimeout(() => label.style.color = 'inherit', 100);
+    }
+    var md = new MobileDetect(window.navigator.userAgent);
+    // ####### Web Cam Scanning #######
+    //console.log(md.mobile());
+    if(!md.mobile()) {
+        const scanner = new QrScanner(video, result => setResult(camQrResult, result));
+        scanner.start();
+        document.querySelector('#mobileQRScanner').style.display = 'none';
+    } else {
+        document.querySelector('#desktopQRScanner').style.display = 'none';
+    }
+    
+    // ####### File Scanning #######
+    /*fileSelector.addEventListener('change', event => {
+        const file = fileSelector.files[0];
+        if (!file) {
+            return;
+        }
+        QrScanner.scanImage(file)
+            .then(result => setResult(fileQrResult, result))
+            .catch(e => setResult(fileQrResult, e || 'No QR code found.'));
+    });*/
+    // ####### debug mode related code #######
+    debugCheckbox.addEventListener('change', () => setDebugMode(debugCheckbox.checked));
+    function setDebugMode(isDebug) {
+        const worker = scanner._qrWorker;
+        worker.postMessage({
+            type: 'setDebug',
+            data: isDebug
+        });
+        if (isDebug) {
+            debugCanvas.style.display = 'block';
+            worker.addEventListener('message', handleDebugImage);
+        } else {
+            debugCanvas.style.display = 'none';
+            worker.removeEventListener('message', handleDebugImage);
+        }
+    }
+    function handleDebugImage(event) {
+        const type = event.data.type;
+        if (type === 'debugImage') {
+            const imageData = event.data.data;
+            if (debugCanvas.width !== imageData.width || debugCanvas.height !== imageData.height) {
+                debugCanvas.width = imageData.width;
+                debugCanvas.height = imageData.height;
+            }
+            debugCanvasContext.putImageData(imageData, 0, 0);
+        }
+    }
+
+</script>
+</apex:form>
+<script src="{!URLFOR($Resource.qrcode, 'toasty.js')}"></script>
+<script src="https://dmla.github.io/jsqrcode/src/qr_packed.js"></script>
+
+  </body>
+</html>
+</apex:page>

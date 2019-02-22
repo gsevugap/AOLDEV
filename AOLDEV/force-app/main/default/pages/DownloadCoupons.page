@@ -1,0 +1,6 @@
+<apex:page controller="GenerateCouponsCtr" sidebar="false" contenttype="text/plain/#coupons.csv" cache="false">
+Discount_Type__c,Coupon_Name_OR_ID__c,Subscription__c,Subscription_Master__c,CType_Product_Workshop__c,Workshop__c,Discount_Percentage_OR_Flat_Price_OR_Day__c,Valid_From_Date__c,Valid_Till_Date__c
+<apex:repeat value="{!GeneratedCoupons}" var="item">
+{!item.Discount_Type__c},{!item.Coupon_Name_OR_ID__c},{!item.Subscription__c},{!item.Subscription_Master__c},{!item.CType_Product_Workshop__c},{!item.Workshop__c},{!item.Discount_Percentage_OR_Flat_Price_OR_Day__c},{!item.Valid_From_Date__c},{!item.Valid_Till_Date__c},
+</apex:repeat>
+</apex:page>
